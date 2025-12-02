@@ -23,8 +23,8 @@ def create_app(config_name=None):
     # Initialize extensions
     db.init_app(app)
     migrate.init_app(app, db, directory='migrations')
-    # Configure CORS - allow all origins in development
-    cors = CORS(app, origins=["http://localhost:5173", "http://localhost:3000"], supports_credentials=True)
+    # Configure CORS - allow all origins in development (for API calls)
+    cors = CORS(app, origins=["http://localhost:5173", "http://localhost:3000", "http://localhost:5000"], supports_credentials=True)
     
     # Error handler to return JSON errors with CORS headers
     @app.errorhandler(Exception)
@@ -54,7 +54,8 @@ def create_app(config_name=None):
         return response
     
     # Register blueprints
-    from app.routes import collections, topics, documents, jobs
+    from app.routes import collections, topics, documents, jobs, ui
+    app.register_blueprint(ui.bp)  # UI routes first (no prefix)
     app.register_blueprint(collections.bp)
     app.register_blueprint(topics.bp)
     app.register_blueprint(documents.bp)

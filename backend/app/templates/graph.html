@@ -1,0 +1,198 @@
+<div class="space-y-4">
+    <h3 class="text-xl font-semibold">Topic Graph</h3>
+    
+    {% if graph and graph.nodes %}
+    <div 
+        id="graph-svg-container" 
+        class="graph-container"
+        data-graph='{{ graph | tojson | safe }}'
+    ></div>
+    
+    <script>
+        (function() {
+            // Wait for DOM and D3 to be ready
+            if (typeof d3 === 'undefined') {
+                console.error('D3.js is not loaded');
+                return;
+            }
+            
+            const container = document.getElementById('graph-svg-container');
+            if (!container) {
+                return;
+            }
+            
+            // Get graph data from data attribute
+            const graphDataStr = container.getAttribute('data-graph');
+            if (!graphDataStr) {
+                return;
+            }
+            
+            let graphData;
+            try {
+                graphData = JSON.parse(graphDataStr);
+            } catch (e) {
+                console.error('Failed to parse graph data:', e);
+                return;
+            }
+            
+            if (!graphData || !graphData.nodes || graphData.nodes.length === 0) {
+                return;
+            }
+
+            // Wait for container to have dimensions
+            const initGraph = () => {
+                const width = container.clientWidth || 1200;
+                const height = container.clientHeight || 800;
+                
+                if (width === 0 || height === 0) {
+                    // Retry after a short delay if container has no dimensions
+                    setTimeout(initGraph, 100);
+                    return;
+                }
+
+                // Clear previous graph
+                container.innerHTML = '';
+
+                const svg = d3.select(container)
+                    .append('svg')
+                    .attr('width', width)
+                    .attr('height', height);
+
+                const g = svg.append('g');
+
+                // Create zoom behavior
+                const zoom = d3.zoom()
+                    .scaleExtent([0.1, 4])
+                    .on('zoom', (event) => {
+                        g.attr('transform', event.transform);
+                    });
+                svg.call(zoom);
+
+                // Prepare nodes and links
+                const nodes = graphData.nodes.map(d => ({ ...d }));
+                const nodeMap = new Map(nodes.map(n => [n.id, n]));
+                const edges = graphData.edges || [];
+                const links = edges
+                    .map(edge => {
+                        const source = nodeMap.get(edge.source);
+                        const target = nodeMap.get(edge.target);
+                        if (!source || !target) return null;
+                        return { 
+                            source, 
+                            target, 
+                            weight: edge.weight || 0.5, 
+                            type: edge.type || 'RELATED' 
+                        };
+                    })
+                    .filter(d => d !== null);
+
+                // Create force simulation
+                const simulation = d3.forceSimulation(nodes)
+                    .force('link', d3.forceLink(links).id(d => d.id).distance(d => {
+                        const weight = d.weight || 0.5;
+                        return Math.max(50, 200 - weight * 100);
+                    }))
+                    .force('charge', d3.forceManyBody().strength(-300))
+                    .force('center', d3.forceCenter(width / 2, height / 2))
+                    .force('collision', d3.forceCollide().radius(d => {
+                        const sizeScore = d.size_score || 0.5;
+                        return Math.max(15, 20 + sizeScore * 20);
+                    }));
+
+                // Create links
+                const link = g.append('g')
+                    .attr('class', 'links')
+                    .selectAll('line')
+                    .data(links)
+                    .enter()
+                    .append('line')
+                    .attr('class', 'link')
+                    .attr('stroke-width', d => Math.sqrt(d.weight) * 3);
+
+                // Create nodes
+                const node = g.append('g')
+                    .attr('class', 'nodes')
+                    .selectAll('circle')
+                    .data(nodes)
+                    .enter()
+                    .append('circle')
+                    .attr('class', 'node')
+                    .attr('r', d => {
+                        const sizeScore = d.size_score || 0.5;
+                        return Math.max(10, 10 + sizeScore * 20);
+                    })
+                    .attr('fill', d => d.color || '#3498db')
+                    .attr('stroke', '#fff')
+                    .attr('stroke-width', 2)
+                    .on('click', function(event, d) {
+                        // Remove previous selection
+                        node.attr('class', 'node');
+                        // Highlight clicked node
+                        d3.select(this).attr('class', 'node selected-node');
+                        // Load topic detail
+                        if (window.selectTopic) {
+                            const topicId = d.id.replace('t', '');
+                            window.selectTopic(topicId);
+                        }
+                    })
+                    .call(d3.drag()
+                        .on('start', function(event, d) {
+                            if (!event.active) simulation.alphaTarget(0.3).restart();
+                            d.fx = d.x;
+                            d.fy = d.y;
+                        })
+                        .on('drag', function(event, d) {
+                            d.fx = event.x;
+                            d.fy = event.y;
+                        })
+                        .on('end', function(event, d) {
+                            if (!event.active) simulation.alphaTarget(0);
+                            d.fx = null;
+                            d.fy = null;
+                        }));
+
+                // Add labels
+                const label = g.append('g')
+                    .attr('class', 'labels')
+                    .selectAll('text')
+                    .data(nodes)
+                    .enter()
+                    .append('text')
+                    .attr('class', 'node-label')
+                    .text(d => d.label)
+                    .attr('dx', 15)
+                    .attr('dy', 4)
+                    .style('pointer-events', 'none');
+
+                // Update positions on simulation tick
+                simulation.on('tick', () => {
+                    link
+                        .attr('x1', d => d.source.x || 0)
+                        .attr('y1', d => d.source.y || 0)
+                        .attr('x2', d => d.target.x || 0)
+                        .attr('y2', d => d.target.y || 0);
+
+                    node
+                        .attr('cx', d => d.x || 0)
+                        .attr('cy', d => d.y || 0);
+
+                    label
+                        .attr('x', d => d.x || 0)
+                        .attr('y', d => d.y || 0);
+                });
+            };
+            
+            // Initialize graph when DOM is ready
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initGraph);
+            } else {
+                // DOM already loaded, but wait a bit for container dimensions
+                setTimeout(initGraph, 50);
+            }
+        })();
+    </script>
+    {% else %}
+    <p class="text-gray-500">No topics found. Start discovery to generate topics.</p>
+    {% endif %}
+</div>
+

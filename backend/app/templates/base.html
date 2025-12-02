@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Topic Discovery System{% endblock %}</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://unpkg.com/d3@7.9.0/dist/d3.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .graph-container {
+            width: 100%;
+            height: 800px;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            background: white;
+        }
+        .node {
+            cursor: pointer;
+        }
+        .node:hover {
+            stroke: #ff6b6b;
+            stroke-width: 3;
+        }
+        .link {
+            stroke: #999;
+            stroke-opacity: 0.6;
+        }
+        .node-label {
+            font-size: 12px;
+            pointer-events: none;
+            fill: #333;
+        }
+        .selected-node {
+            stroke: #ff6b6b;
+            stroke-width: 4;
+        }
+        .citation-link {
+            color: #2563eb;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+        .citation-link:hover {
+            color: #1d4ed8;
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen">
+        <nav class="bg-white shadow-sm border-b">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16">
+                    <div class="flex items-center">
+                        <h1 class="text-xl font-bold text-gray-900">Topic Discovery System</h1>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <a href="/" class="text-gray-600 hover:text-gray-900">Home</a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    {% block extra_scripts %}{% endblock %}
+    
+    <script>
+        // Global functions available throughout the application
+        window.selectTopic = function(topicId) {
+            htmx.ajax('GET', '/topics/' + topicId, {
+                target: '#topic-detail-container',
+                swap: 'innerHTML'
+            });
+            // Scroll to topic detail
+            const container = document.getElementById('topic-detail-container');
+            if (container) {
+                container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        };
+
+        window.showDocumentPreview = function(documentId) {
+            htmx.ajax('GET', '/documents/' + documentId + '/preview', {
+                target: '#document-preview',
+                swap: 'innerHTML',
+                onAfterSwap: function() {
+                    // Scroll to preview after swap
+                    const previewEl = document.getElementById('document-preview');
+                    if (previewEl) {
+                        previewEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }
+            });
+        };
+    </script>
+</body>
+</html>
+

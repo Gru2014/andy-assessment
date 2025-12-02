@@ -1,0 +1,8 @@
+<div class="border border-gray-200 rounded-lg p-4 bg-white">
+    <h4 class="text-lg font-semibold mb-2">{{ document.title }}</h4>
+    <div class="text-sm text-gray-600 whitespace-pre-wrap max-h-96 overflow-y-auto">
+        {{ document.content[:2000] }}{% if document.content|length > 2000 %}...{% endif %}
+    </div>
+</div>
+
+

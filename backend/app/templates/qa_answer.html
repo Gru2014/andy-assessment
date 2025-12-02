@@ -1,0 +1,62 @@
+<div class="p-4 bg-blue-50 rounded-md">
+    <h4 class="font-semibold text-gray-800 mb-2">Answer:</h4>
+    <div class="text-gray-700 whitespace-pre-wrap" id="answer-text">
+        {{ answer | safe }}
+    </div>
+    {% if citations and citations|length > 0 %}
+    <div class="mt-3 pt-3 border-t border-blue-200">
+        <p class="text-sm font-semibold text-gray-700 mb-2">Citations:</p>
+        <ul class="space-y-1">
+            {% for citation in citations %}
+            <li
+                class="text-sm citation-link"
+                onclick="showDocumentPreview({{ citation.document_id }})"
+            >
+                [{{ loop.index }}] {{ citation.title }}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    // Process citations in answer text
+    (function() {
+        const answerText = document.getElementById('answer-text');
+        if (!answerText) return;
+        
+        const text = answerText.innerHTML;
+        const citationPattern = /\[Doc(\d+)\]/g;
+        const citations = {{ citations | tojson }};
+        
+        let processedText = text;
+        let match;
+        const matches = [];
+        
+        // Find all citation matches
+        while ((match = citationPattern.exec(text)) !== null) {
+            matches.push({
+                index: match.index,
+                length: match[0].length,
+                docIndex: parseInt(match[1]) - 1
+            });
+        }
+        
+        // Replace citations with clickable links (in reverse order to preserve indices)
+        for (let i = matches.length - 1; i >= 0; i--) {
+            const m = matches[i];
+            const citation = citations[m.docIndex];
+            if (citation) {
+                const before = processedText.substring(0, m.index);
+                const after = processedText.substring(m.index + m.length);
+                const link = `<span class="citation-link" onclick="showDocumentPreview(${citation.document_id})" title="${citation.title}">[Doc${m.docIndex + 1}]</span>`;
+                processedText = before + link + after;
+            }
+        }
+        
+        answerText.innerHTML = processedText;
+    })();
+</script>
+
+

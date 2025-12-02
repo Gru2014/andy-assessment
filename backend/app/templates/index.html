@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-2xl font-bold mb-4">Collections</h2>
+        
+        <div class="mb-4">
+            <label for="collection-select" class="block text-sm font-medium text-gray-700 mb-2">
+                Select Collection
+            </label>
+            <select 
+                id="collection-select" 
+                name="collection_id"
+                class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            >
+                <option value="">-- Select a collection --</option>
+                {% for collection in collections %}
+                <option value="{{ collection.id }}" {% if collection.id == collection_id %}selected{% endif %}>
+                    {{ collection.name }} ({{ collection.document_count }} docs, {{ collection.topic_count }} topics)
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        {% if collection_id %}
+        <div class="flex space-x-4 mb-4">
+            <form hx-post="/collections/{{ collection_id }}/discover" 
+                  hx-target="#job-status" 
+                  hx-swap="outerHTML"
+                  hx-indicator="#loading-indicator"
+                  class="inline">
+                <input type="hidden" name="incremental" value="false">
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                    Full Discovery
+                </button>
+            </form>
+            <form hx-post="/collections/{{ collection_id }}/discover" 
+                  hx-target="#job-status" 
+                  hx-swap="outerHTML"
+                  hx-indicator="#loading-indicator"
+                  class="inline">
+                <input type="hidden" name="incremental" value="true">
+                <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
+                    Incremental Update
+                </button>
+            </form>
+        </div>
+
+        <div id="job-status">
+            <div class="text-sm text-gray-600">Loading job status...</div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div id="loading-indicator" class="htmx-indicator fixed top-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-md shadow-lg">
+        <span>Loading...</span>
+    </div>
+
+    <div id="graph-container" class="bg-white rounded-lg shadow p-6">
+        {% if collection_id %}
+            {% include "graph.html" %}
+        {% else %}
+            <p class="text-gray-500">Please select a collection to view the topic graph.</p>
+        {% endif %}
+    </div>
+
+    <div id="topic-detail-container" class="bg-white rounded-lg shadow p-6">
+        <!-- Topic detail will be loaded here via HTMX -->
+    </div>
+
+    <div id="document-preview" class="bg-white rounded-lg shadow p-6 mt-6">
+        <!-- Document preview will be loaded here -->
+    </div>
+</div>
+
+<script>
+    // Handle collection selection change
+    document.getElementById('collection-select')?.addEventListener('change', function(e) {
+        const collectionId = e.target.value;
+        if (collectionId) {
+            // Update URL without reload
+            window.history.pushState({}, '', '/?collection_id=' + collectionId);
+            // Reload page with new collection_id
+            window.location.href = '/?collection_id=' + collectionId;
+        } else {
+            window.location.href = '/';
+        }
+    });
+
+</script>
+{% endblock %}
+

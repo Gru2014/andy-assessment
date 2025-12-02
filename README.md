@@ -16,7 +16,7 @@ A prototype system that automatically discovers topics from document collections
 ## Tech Stack
 
 - **Backend**: Flask, SQLAlchemy, PostgreSQL
-- **Frontend**: React, TypeScript, Tailwind CSS, D3.js
+- **Frontend**: HTMX, Tailwind CSS, D3.js (served directly from Flask)
 - **ML/NLP**: OpenAI API (LLMs and Embeddings)
 - **Background Jobs**: Redis, RQ (Redis Queue)
 - **Tests**: pytest
@@ -39,8 +39,7 @@ A prototype system that automatically discovers topics from document collections
 cp backend/.env.example backend/.env
 # Edit backend/.env and add your OPENAI_API_KEY
 
-# Root .env (for Docker Compose)
-# Add VITE_API_URL=http://backend:5000 if not present
+# Root .env (for Docker Compose) - optional
 ```
 
 2. **Start the stack**
@@ -63,13 +62,8 @@ docker-compose exec backend python scripts/load_documents_from_folder.py --folde
 
 5. **Access the application**
 
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:5000
-
-5. **Access the application**
-
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:5000
+- Web UI: http://localhost:5000 (HTMX frontend served directly from Flask)
+- Backend API: http://localhost:5000/api (JSON endpoints)
 - Health check: http://localhost:5000/jobs/health
 
 ### Development Commands
@@ -110,13 +104,13 @@ assessment/
 │   ├── migrations/              # Database migrations
 │   ├── requirements.txt
 │   └── Dockerfile
-├── frontend/
-│   ├── src/
-│   │   ├── components/          # React components
-│   │   ├── api/                 # API client
-│   │   └── App.tsx
-│   ├── package.json
-│   └── Dockerfile
+├── backend/
+│   ├── app/
+│   │   ├── templates/           # HTMX HTML templates
+│   │   │   ├── base.html
+│   │   │   ├── index.html
+│   │   │   ├── graph.html
+│   │   │   └── ...
 └── docker-compose.yml
 ```
 
@@ -149,13 +143,14 @@ assessment/
 
 ## Usage Workflow
 
-1. **Create a collection** (or use the sample collection)
-2. **Add documents** via the API or UI
+1. **Access the web UI** - Open http://localhost:5000 in your browser
+2. **Select a collection** - Choose from the dropdown
 3. **Start discovery** - Click "Full Discovery" or "Incremental Update"
-4. **View the graph** - Interactive topic graph appears
+4. **View the graph** - Interactive topic graph appears (D3.js visualization)
 5. **Click a topic node** - See topic details, documents, and insights
-6. **Ask questions** - Use the Q&A feature with inline citations
-7. **Add more documents** - Use incremental update to update topics
+6. **Ask questions** - Use the Q&A feature with inline citations (clickable)
+7. **Click citations** - Citations scroll to document previews
+8. **Add more documents** - Use incremental update to update topics
 
 ## Testing
 

@@ -79,6 +79,11 @@ def get_document(collection_id, document_id):
         collection_id=collection_id
     ).first_or_404()
     
+    # Return HTML for HTMX requests, JSON for API requests
+    if request.headers.get('HX-Request'):
+        from flask import render_template
+        return render_template('document_preview.html', document=document)
+    
     return jsonify({
         'id': document.id,
         'title': document.title,

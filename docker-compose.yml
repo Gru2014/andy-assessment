@@ -8,7 +8,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "5433:5432"  # Changed to 5433 to avoid conflict with existing PostgreSQL
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -18,7 +18,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "6380:6379"  # Changed to 6380 to avoid conflict with existing Redis
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -86,17 +86,8 @@ services:
       - ./documents:/documents:ro
     restart: unless-stopped
 
-  frontend:
-    build:
-      context: ./frontend
-      args:
-        VITE_API_URL: ${VITE_API_URL:-http://backend:5000}
-        VITE_ENV: ${VITE_ENV:-production}
-    ports:
-      - "3000:80"
-    depends_on:
-      - backend
-    restart: unless-stopped
+  # Frontend is now served directly from Flask backend using HTMX
+  # No separate frontend service needed
 
 volumes:
   postgres_data:

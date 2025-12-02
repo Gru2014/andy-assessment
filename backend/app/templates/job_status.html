@@ -1,0 +1,48 @@
+{% if job %}
+<div id="job-status" class="space-y-2"
+     {% if job.status == "RUNNING" or job.status == "PENDING" %}
+     hx-get="/collections/{{ collection_id }}/discover/status"
+     hx-trigger="every 2s"
+     hx-swap="outerHTML"
+     {% endif %}>
+    <div class="flex items-center justify-between">
+        <span class="text-sm font-medium text-gray-700">Status: {{ job.status }}</span>
+        <span class="text-sm text-gray-500">{{ "%.0f"|format(job.progress * 100) }}%</span>
+    </div>
+    
+    {% if job.status == "RUNNING" or job.status == "PENDING" %}
+    <div class="w-full bg-gray-200 rounded-full h-2">
+        <div 
+            class="bg-blue-600 h-2 rounded-full transition-all duration-300"
+            style="width: {{ job.progress * 100 }}%"
+        ></div>
+    </div>
+    {% elif job.status == "SUCCEEDED" %}
+    <div class="w-full bg-gray-200 rounded-full h-2">
+        <div class="bg-green-600 h-2 rounded-full" style="width: 100%"></div>
+    </div>
+    {% elif job.status == "FAILED" %}
+    <div class="w-full bg-gray-200 rounded-full h-2">
+        <div class="bg-red-600 h-2 rounded-full" style="width: 100%"></div>
+    </div>
+    {% endif %}
+    
+    {% if job.current_step %}
+    <p class="text-xs text-gray-600">{{ job.current_step }}</p>
+    {% endif %}
+    
+    {% if job.error_message %}
+    <p class="text-xs text-red-600">{{ job.error_message }}</p>
+    {% endif %}
+    
+    {% if job.status == "SUCCEEDED" %}
+    <p class="text-xs text-green-600 font-semibold">✓ Discovery completed successfully!</p>
+    {% elif job.status == "FAILED" %}
+    <p class="text-xs text-red-600 font-semibold">✗ Discovery failed. Please check the error message above.</p>
+    {% endif %}
+</div>
+{% else %}
+<div id="job-status" class="text-sm text-gray-600">No discovery job found. Start discovery to begin.</div>
+{% endif %}
+
+

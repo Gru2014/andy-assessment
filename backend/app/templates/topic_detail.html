@@ -1,0 +1,137 @@
+<div class="space-y-6">
+    <div>
+        <h2 class="text-2xl font-bold">{{ topic.name }}</h2>
+        <p class="text-sm text-gray-500 mt-1">
+            {{ topic.document_count }} documents • Size score: {{ "%.2f"|format(topic.size_score) }}
+        </p>
+    </div>
+
+    {% if topic.insights %}
+    <div class="space-y-4">
+        {% if topic.insights.summary %}
+        <div>
+            <h3 class="text-lg font-semibold mb-2">Summary</h3>
+            <p class="text-gray-600">{{ topic.insights.summary }}</p>
+        </div>
+        {% endif %}
+
+        {% if topic.insights.themes and topic.insights.themes|length > 0 %}
+        <div>
+            <h3 class="text-lg font-semibold mb-2">Key Themes</h3>
+            <ul class="list-disc list-inside space-y-1 text-gray-600">
+                {% for theme in topic.insights.themes %}
+                <li>{{ theme }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if topic.insights.common_questions and topic.insights.common_questions|length > 0 %}
+        <div>
+            <h3 class="text-lg font-semibold mb-2">Common Questions</h3>
+            <ul class="list-disc list-inside space-y-1 text-gray-600">
+                {% for question in topic.insights.common_questions %}
+                <li>{{ question }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if topic.insights.related_concepts and topic.insights.related_concepts|length > 0 %}
+        <div>
+            <h3 class="text-lg font-semibold mb-2">Related Concepts</h3>
+            <ul class="list-disc list-inside space-y-1 text-gray-600">
+                {% for concept in topic.insights.related_concepts %}
+                <li>{{ concept }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div>
+        <h3 class="text-lg font-semibold mb-3">Documents</h3>
+        <div class="space-y-2 max-h-64 overflow-y-auto">
+            {% for doc in topic.documents %}
+            <div
+                class="border border-gray-200 rounded p-3 hover:bg-gray-50 cursor-pointer"
+                onclick="showDocumentPreview({{ doc.id }})"
+                id="doc-{{ doc.id }}"
+            >
+                <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                        <h4 class="font-medium text-gray-800">{{ doc.title }}</h4>
+                        <p class="text-sm text-gray-600 mt-1">{{ doc.content_preview }}</p>
+                    </div>
+                    <div class="ml-4 flex flex-col items-end space-y-1">
+                        {% if doc.is_primary %}
+                        <span class="px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded">
+                            Primary
+                        </span>
+                        {% else %}
+                        <span class="px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-800 rounded">
+                            Secondary
+                        </span>
+                        {% endif %}
+                        <span class="text-xs text-gray-500">
+                            Relevance: {{ "%.1f"|format(doc.relevance_score * 100) }}%
+                        </span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    {% if topic.related_topics and topic.related_topics|length > 0 %}
+    <div>
+        <h3 class="text-lg font-semibold mb-2">Related Topics</h3>
+        <div class="flex flex-wrap gap-2">
+            {% for rt in topic.related_topics %}
+            <button
+                class="px-3 py-1 text-sm bg-gray-100 text-gray-800 rounded hover:bg-gray-200"
+                onclick="selectTopic({{ rt.id }})"
+            >
+                {{ rt.name }} ({{ "%.0f"|format(rt.similarity_score * 100) }}%)
+            </button>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="border-t pt-4">
+        <h3 class="text-lg font-semibold mb-3">Ask a Question</h3>
+        <form
+            hx-post="/topics/{{ topic.id }}/qa"
+            hx-target="#qa-answer"
+            hx-swap="innerHTML"
+            hx-indicator="#qa-loading"
+        >
+            <div class="space-y-3">
+                <textarea
+                    name="question"
+                    rows="3"
+                    class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    placeholder="Ask a question about this topic..."
+                    required
+                ></textarea>
+                <button
+                    type="submit"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                    Ask Question
+                </button>
+            </div>
+        </form>
+
+        <div id="qa-loading" class="htmx-indicator mt-4">
+            <div class="text-sm text-gray-600">Generating answer...</div>
+        </div>
+
+        <div id="qa-answer" class="mt-4">
+            <!-- Answer will be loaded here -->
+        </div>
+    </div>
+</div>
+
